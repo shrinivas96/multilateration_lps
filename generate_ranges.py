@@ -5,71 +5,87 @@ All measurements are in SI units.
 import matplotlib.pyplot as plt
 import numpy as np
 import random
-from math import cos, sin, pi
 # random.seed(0)
 
 class FieldAssets:
 	def __init__(self, fieldLength, fieldWidth) -> None:
+		# some aspects related to the field
 		self.fieldLength = fieldLength
 		self.fieldWidth = fieldWidth
+
+		# holds the player/sensors position
 		self.playerPos = np.array([fieldLength/2, fieldWidth/2])
-		self.origin = np.array([0, 0])
 
 		# assuming all functions will be run at 20 Hz,
 		# AND given that avg player runs at 10 m/s,
 		# the average distance a player will cover is
 		self.avgDistCovered = 0.5
+
+		# noise for distroting all measurements
+		self.noise = 0.3
 		
-		self.receiverPos = {"BL": (0, 0), "TL": (0, 60), "TR": (100, 60), "BR": (100, 0)}
+		# position of all the sensors
+		self.receiverPos = {"BL": np.array([0, 0]), 
+					  		"TL": np.array([0, 60]), 
+							"TR": np.array([100, 60]), 
+							"BR": np.array([100, 0])}
 
 	def whereAreYouRunning(self):
 		"""
 		This fucntion will decide on a random direction and a pre-decided distance 
-		that the player will cover in the span of 0.05 s. At the moment this is a dumb 
+		that the player will cover in the span of 0.05 s. At the moment it's a fairly naive
 		function that just keeps the player 0.5m away from the borders.
 		"""
 		# the player can go into one of these quadrants, 
 		# depending on if these quadrants are close to the border
-		# change these values to radians in the next iteration
-		available_range = [[45, 135], [135, 225], [225, 315], [315, 405]]
+		# TODO: change these values to radians in the next iteration
+		quadrants_available = [[45, 135], [135, 225], [225, 315], [315, 405]]
 		x = self.playerPos[0]
 		y = self.playerPos[1]
 		
 		# check which quadrant(s) can be removed 
 		if x < 0.5:
-			available_range.pop(1)
+			quadrants_available.pop(1)
 		elif x > 99.5:
-			available_range.pop(3)
+			quadrants_available.pop(3)
 		if y < 0.5:
-			available_range.pop(2)
+			quadrants_available.pop(2)
 		elif y > 99.5:
-			available_range.pop(0)
+			quadrants_available.pop(0)
 
 		# add the rest of the quadrants to be randomly chosen from
 		available_directions = []
-		for ranges in available_range:
+		for ranges in quadrants_available:
 			available_directions += list(range(ranges[0], ranges[1]))
 		
 		# choose a direction where the player goes
 		direction = random.choice(available_directions) * (np.pi/180)
 
+		# this is the new player position for this time step
 		self.playerPos += np.array([self.avgDistCovered*np.cos(direction),
 							  		self.avgDistCovered*np.sin(direction)])
 		
+	def rangingGenerator(self):
+		"""
+		This function returns the distance of the player to the 4 sensors placed at the 4 corners of the field.
+		Calculate the l2 norm between two given points. The l2 norm is the Eucledian distance
+		"""
+		distances = []
+		for rec_position in self.receiverPos.values():
+			distances.append(np.linalg.norm(self.playerPos - rec_position) + random.uniform(-self.noise, self.noise))
+		
+		return distances
+	
 	def getPosition(self):
 		return self.playerPos
 
-def generate_ranges():
-	pass
-
-
 
 if __name__ == '__main__':
-	generate_ranges()
 	obj = FieldAssets(100, 60)
 	print(obj.getPosition())
+	print(obj.rangingGenerator())
 	
-	num_iterations = 1000
+	num_iterations = 50
 
 	# Arrays to store x and y coordinates
 	x_coords = np.zeros(num_iterations)
@@ -82,6 +98,7 @@ if __name__ == '__main__':
 	x_coords[0], y_coords[0] = initial_coord
 
 	for i in range(1, num_iterations):
+		print(obj.rangingGenerator())
 		obj.whereAreYouRunning()
 		new_coord = obj.getPosition()
 		x_coords[i], y_coords[i] = new_coord
