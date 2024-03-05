@@ -8,20 +8,23 @@ import random
 # random.seed(0)
 
 class FieldAssets:
-	def __init__(self, fieldLength, fieldWidth) -> None:
+	def __init__(self, fieldLength, fieldWidth, initPos=None) -> None:
 		# some aspects related to the field
 		self.fieldLength = fieldLength
 		self.fieldWidth = fieldWidth
 
+		if initPos is None:
+			initPos = np.array([fieldLength/2, fieldWidth/2])
+		
 		# holds the player/sensors position
-		self.playerPos = np.array([fieldLength/2, fieldWidth/2])
+		self.playerPos = initPos
 
 		# assuming all functions will be run at 20 Hz,
-		# AND given that avg player runs at 10 m/s,
+		# AND given that avg player runs at 5 m/s,
 		# the average distance a player will cover is
-		self.avgDistCovered = 0.5
+		self.avgDistCovered = 0.25
 
-		# noise for distroting all measurements
+		# noise for distorting all measurements
 		self.noise = 0.3
 		
 		# position of all the sensors
@@ -34,26 +37,26 @@ class FieldAssets:
 		"""
 		This fucntion will decide on a random direction and a pre-decided distance 
 		that the player will cover in the span of 0.05 s. At the moment it's a fairly naive
-		function that just keeps the player 0.5m away from the borders.
+		function that just keeps the player 0.25m away from the borders.
 		"""
-		# the player can go into one of these quadrants, 
+		# the player can go into one of these quadrants,
 		# depending on if these quadrants are close to the border
-		# TODO: change these values to radians in the next iteration
-		quadrants_available = [[45, 135], [135, 225], [225, 315], [315, 405]]
+		quadrants_available = [[45, 135], [135, 225], [225, 315], [315, 405]]		# (x-axis is 0 deg)
 		x = self.playerPos[0]
 		y = self.playerPos[1]
 		
 		# check which quadrant(s) can be removed 
-		if x < 0.5:
+		# the remaining quadrants are the directions where the player can move
+		if x < 0.25:
 			quadrants_available.pop(1)
-		elif x > 99.5:
+		elif x > 99.25:
 			quadrants_available.pop(3)
-		if y < 0.5:
+		if y < 0.25:
 			quadrants_available.pop(2)
-		elif y > 99.5:
+		elif y > 59.25:
 			quadrants_available.pop(0)
 
-		# add the rest of the quadrants to be randomly chosen from
+		# expand the rest of the quadrants to be randomly chosen out of
 		available_directions = []
 		for ranges in quadrants_available:
 			available_directions += list(range(ranges[0], ranges[1]))
@@ -67,8 +70,8 @@ class FieldAssets:
 		
 	def rangingGenerator(self):
 		"""
-		This function returns the distance of the player to the 4 sensors placed at the 4 corners of the field.
-		Calculate the l2 norm between two given points. The l2 norm is the Eucledian distance
+		This function returns the erroneous distance of the player to the 4 sensors placed at the 4 corners of the field.
+		Calculates the Eucledian distance between two given points.
 		"""
 		distances = []
 		for rec_position in self.receiverPos.values():
@@ -81,39 +84,31 @@ class FieldAssets:
 
 
 if __name__ == '__main__':
-	obj = FieldAssets(100, 60)
-	print(obj.getPosition())
-	print(obj.rangingGenerator())
+	initial_position = np.array([30., 20.])
+	obj = FieldAssets(100, 60, initial_position)
+	print("Initial player position", obj.getPosition())
 	
-	num_iterations = 50
+	# should be replaced by function that can run at 20 Hz
+	total_iterations = 1500
 
-	# Arrays to store x and y coordinates
-	x_coords = np.zeros(num_iterations)
-	y_coords = np.zeros(num_iterations)
+	# arrays to store x and y coordinates for visualisation
+	x_coords = np.zeros(total_iterations)
+	y_coords = np.zeros(total_iterations)
 	
-	# Initial coordinates
-	initial_coord = np.array([50, 30])
+	# initialize the first point
+	x_coords[0], y_coords[0] = initial_position
 
-	# Initialize first point
-	x_coords[0], y_coords[0] = initial_coord
+	for i in range(1, total_iterations):
+		print(obj.rangingGenerator())				# distance from all sensors: to be estimated
+		obj.whereAreYouRunning()					# update the player position
+		new_position = obj.getPosition()			# get new position
+		x_coords[i], y_coords[i] = new_position		# update array
 
-	for i in range(1, num_iterations):
-		print(obj.rangingGenerator())
-		obj.whereAreYouRunning()
-		new_coord = obj.getPosition()
-		x_coords[i], y_coords[i] = new_coord
-
-	
-
-	plt.figure(figsize=(8, 6))
+	# gimme that plot
+	plt.figure(figsize=(10, 8))
 	plt.plot(x_coords, y_coords, marker='o')
-	plt.title('Change of Coordinates')
-	plt.xlabel('X Coordinate')
-	plt.ylabel('Y Coordinate')
+	plt.title('Drunk player on a field')
+	# plt.xlim((0, 100))
+	# plt.ylim((0, 60))
 	plt.grid(True)
 	plt.show()
-	
-	# original position
-	# generate some sort of a big array or a variable that takes in the field size and geenrates a field space.
-	# this is ideally the whole field that you will be working with. based on this field is where the position 
-	# of the ball and players will randomly be generated
