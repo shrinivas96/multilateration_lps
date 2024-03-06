@@ -1,5 +1,6 @@
+from least_squares import residual_function
 from generate_ranges import FieldAssets
-from scipy.optimize import least_squares
+from scipy import optimize
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -46,11 +47,63 @@ def plot_circles():
 	plt.show()
 
 
+def write_to_disk(player_trajectory, est_trajectory, file_name):
+	# print()
+	file_object = open(file_name, "w")
+	file_object.write("Current \t\t estimated \t\t error\n")
+	for i in range(player_trajectory.shape[1]):
+		file_object.write("{} \t\t {} \t\t {}\n".format(player_trajectory[:, i],
+												  		est_trajectory[:, i],
+														np.linalg.norm(
+															player_trajectory[:, i] - est_trajectory[:, i]
+														)))
+	file_object.close()
+
+
 if __name__ == "__main__":
-	# TODO: implement 20 Hz running cycle
-	# TODO: process distance to find the position
-	# plot_circles()
 	initial_position = np.array([50.0, 24.0])
 	obj = FieldAssets(100, 60, initial_position)
-	measurement = obj.rangingGenerator()
-	print(measurement)
+	
+	# should be replaced by function that can run at 20 Hz
+	total_iterations = 1500
+	t = 0
+
+	# player's path for visualisation
+	player_trajectory = np.zeros((initial_position.shape[0], total_iterations))
+	player_trajectory[:, 0] = initial_position
+
+	# estimated trajectory, for visualisation
+	initial_guess = np.array([49.0, 23.0])
+	est_trajectory = np.zeros((initial_guess.shape[0], total_iterations))
+	est_trajectory[:, 0] = initial_guess
+
+	for i in range(1, total_iterations):
+		# distance from all sensors: to be estimated
+		distance_meas = obj.rangingGenerator()
+		state_res = optimize.least_squares(residual_function, initial_guess, method='lm', args=(distance_meas, t))
+		initial_guess = state_res.x
+		est_trajectory[:, i] = initial_guess
+
+		# update player position, save it
+		obj.whereAreYouRunning()
+		player_trajectory[:, i] = obj.getPosition()
+
+	# write_to_disk(player_trajectory, est_trajectory, "results/player_tracking.txt")
+
+	# gimme that plot
+	plt.figure(figsize=(10, 8))
+	plt.plot(player_trajectory[0, :], player_trajectory[1, :], marker='x', label="Player trajectory")
+	plt.plot(est_trajectory[0, :], est_trajectory[1, :], marker='+', label="Estimated trajectory")
+	plt.title('Tracking a drunk player on a field')
+	plt.legend()
+	plt.grid(True)
+
+	plt.figure(figsize=(10, 8))
+	error = np.linalg.norm(player_trajectory - est_trajectory, axis=0)
+	iterations = np.arange(total_iterations)
+	plt.plot(iterations, error)
+	plt.xlabel("Number of Iterations")
+	plt.ylabel("Normed Error")
+	plt.title("Norm of difference between positions")
+	plt.grid(True)
+	plt.show()
