@@ -1,11 +1,6 @@
-"""
-Ideally generates the ranges of where the players are. This is pseudo random.
-All measurements are in SI units.
-"""
 import matplotlib.pyplot as plt
 import numpy as np
 import random
-# random.seed(0)
 
 class FieldAssets:
 	def __init__(self, fieldLength, fieldWidth, initPos=None) -> None:
@@ -77,7 +72,7 @@ class FieldAssets:
 		for rec_position in self.receiverPos.values():
 			distances.append(np.linalg.norm(self.playerPos - rec_position) + random.uniform(-self.noise, self.noise))
 		
-		return distances
+		return np.array(distances)
 	
 	def getPosition(self):
 		return self.playerPos
@@ -86,29 +81,24 @@ class FieldAssets:
 if __name__ == '__main__':
 	initial_position = np.array([30., 20.])
 	obj = FieldAssets(100, 60, initial_position)
+	
 	print("Initial player position", obj.getPosition())
 	
 	# should be replaced by function that can run at 20 Hz
 	total_iterations = 1500
 
-	# arrays to store x and y coordinates for visualisation
-	x_coords = np.zeros(total_iterations)
-	y_coords = np.zeros(total_iterations)
-	
-	# initialize the first point
-	x_coords[0], y_coords[0] = initial_position
+	# player's path for visualisation
+	player_trajectory = np.zeros((initial_position.shape[0], total_iterations))
+	player_trajectory[:, 0] = initial_position
 
 	for i in range(1, total_iterations):
-		print(obj.rangingGenerator())				# distance from all sensors: to be estimated
-		obj.whereAreYouRunning()					# update the player position
-		new_position = obj.getPosition()			# get new position
-		x_coords[i], y_coords[i] = new_position		# update array
+		# distance_meas = obj.rangingGenerator()		# distance from all sensors: to be estimated
+		obj.whereAreYouRunning()						# update player position
+		player_trajectory[:, i] = obj.getPosition()		# save new position
 
 	# gimme that plot
 	plt.figure(figsize=(10, 8))
-	plt.plot(x_coords, y_coords, marker='o')
+	plt.plot(player_trajectory[0, :], player_trajectory[1, :], marker='x')
 	plt.title('Drunk player on a field')
-	# plt.xlim((0, 100))
-	# plt.ylim((0, 60))
 	plt.grid(True)
 	plt.show()
