@@ -65,7 +65,7 @@ if __name__ == "__main__":
 	obj = FieldAssets(100, 60, initial_position)
 	
 	# should be replaced by function that can run at 20 Hz
-	total_iterations = 1500
+	total_iterations = 150
 	t = 0
 
 	# player's path for visualisation
@@ -73,20 +73,19 @@ if __name__ == "__main__":
 	player_trajectory[:, 0] = initial_position
 
 	# estimated trajectory, for visualisation
-	initial_guess = np.array([49.0, 23.0])
+	initial_guess = np.array([49.5, 23.5])
 	est_trajectory = np.zeros((initial_guess.shape[0], total_iterations))
 	est_trajectory[:, 0] = initial_guess
 
 	for i in range(1, total_iterations):
 		# distance from all sensors: to be estimated
 		distance_meas = obj.rangingGenerator()
-		state_res = optimize.least_squares(residual_function, initial_guess, method='lm', args=(distance_meas, t))
+		state_res = optimize.least_squares(residual_function, initial_guess, method='trf', args=(distance_meas, t))
 		initial_guess = state_res.x
 		est_trajectory[:, i] = initial_guess
 
-		# update player position, save it
-		obj.whereAreYouRunning()
-		player_trajectory[:, i] = obj.getPosition()
+		# save player position
+		player_trajectory[:, i] = obj.getPosbition()
 
 	# write_to_disk(player_trajectory, est_trajectory, "results/player_tracking.txt")
 

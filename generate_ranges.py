@@ -32,7 +32,7 @@ class FieldAssets:
             "BR": np.array([100, 0])
         }
 
-    def whereAreYouRunning(self):
+    def whereAreYouRunning(self) -> None:
         """
         This fucntion will decide on a random direction and a pre-decided distance
         that the player will cover in the span of 0.05 s. At the moment it's a fairly naive
@@ -76,7 +76,7 @@ class FieldAssets:
             ]
         )
 
-    def rangingGenerator(self):
+    def rangingGenerator(self) -> np.ndarray:
         """
         This function returns the erroneous distance of the player to the 4 sensors placed at the 4 corners of the field.
         Calculates the Eucledian distance between two given points.
@@ -91,7 +91,7 @@ class FieldAssets:
 
         return np.array(distances)
 
-    def getPosition(self):
+    def getPosition(self) -> np.ndarray:
         return self.playerPos
 
 

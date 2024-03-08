@@ -5,8 +5,8 @@ from scipy import optimize
 import numpy as np
 
 
-def distance_function(state: np.ndarray):
-    xp, yp = state
+def distance_function(state: np.ndarray) -> np.ndarray:
+    xp, yp = state[0], state[1]
     xp2, yp2 = xp**2, yp**2
     yp60 = (yp - 60) ** 2
     xp100 = (xp - 100) ** 2
@@ -20,8 +20,8 @@ def distance_function(state: np.ndarray):
     )
 
 
-def jacobian_i(state: np.ndarray):
-    xp, yp = state
+def jacobian_i(state: np.ndarray) -> np.ndarray:
+    xp, yp = state[0], state[1]
     xp2, yp2 = xp**2, yp**2
     yp60 = (yp - 60) ** 2
     xp100 = (xp - 100) ** 2
@@ -36,6 +36,16 @@ def jacobian_i(state: np.ndarray):
     j42 = yp / np.sqrt(xp100 + yp2)
     Ji = np.array([[j11, j12], [j21, j22], [j31, j32], [j41, j42]])
     return Ji
+
+def jacobian_ext(state: np.ndarray) -> np.ndarray:
+    """
+    Augmenting the above jacobia matrix for the purposes of using in the Kalman filter framework.
+    The KF framework has a constant velocity model, which means two more states have been added, 
+    and the jacobian needs to be bigger.
+    """
+    Je = np.zeros((state.shape[0], state.shape[0]))
+    Je[:, 0:2] = jacobian_i(state)
+    return Je
 
 
 def residual_function(state: np.ndarray, measurement: np.ndarray, t: int):
