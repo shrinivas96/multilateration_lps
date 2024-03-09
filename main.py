@@ -6,11 +6,14 @@ import numpy as np
 
 
 def main():
+	# set an initial position, and some field parameters
 	initial_position = np.array([50.0, 24.0])
 	obj = FieldAssets(100, 60, initial_position)
 	
-	dt = 0.5
+	# delta_t for velocity estimation
+	dt = 0.05
 
+	# total iterations to move the player
 	total_iterations = 150
 	t = 0
 
@@ -32,9 +35,9 @@ def main():
 		initial_guess = state_res.x
 		est_trajectory[:, i] = initial_guess
 
-		# save player position
-		player_trajectory[:, i] = obj.getPosition()
+		# update and save player position
 		obj.alternativeRunning()
+		player_trajectory[:, i] = obj.getPosition()
 
 	# gimme that plot
 	plt.figure(figsize=(10, 8))
