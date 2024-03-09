@@ -4,69 +4,13 @@ from scipy import optimize
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_circles():
-	initial_position = np.array([50.0, 24.0])
-	
-	obj = FieldAssets(100, 60, initial_position)
-	l1, l2, l3, l4 = obj.rangingGenerator()
-	y1 = (l1**2 - l2**2 + 60**2)/120
-	y2 = (l4**2 - l3**2 + 60**2)/120
-	x1 = np.sqrt(l1**2 - y1**2)
-	x2 = np.sqrt(l4**2 - y2**2) + 100
-	print("Simple equation based solution: ({0}, {1}) and ({2}, {3})".format(x1, y1, x2, y2))
 
-	radii = np.array(obj.rangingGenerator())
-
-	receiverPos = {"BL": np.array([0, 0]), 
-					"TL": np.array([0, 60]),
-					"TR": np.array([100, 60]), 
-					"BR": np.array([100, 0])}
-	coordinates = np.array(list(receiverPos.values()))
-	
-	fig, ax = plt.subplots(figsize=(8, 8))
-	plt.scatter(coordinates[:, 0], coordinates[:, 1])
-	for i in range(len(coordinates)):
-		circle = plt.Circle(coordinates[i], radii[i], color='b', fill=False)
-		ax.add_artist(circle)
-	
-	# Set equal aspect ratio
-	ax.set_aspect('equal')
-
-	# Set limits based on coordinates and radii
-	xlim = (coordinates[:, 0].min() - radii.max(), coordinates[:, 0].max() + radii.max())
-	ylim = (coordinates[:, 1].min() - radii.max(), coordinates[:, 1].max() + radii.max())
-	plt.xlim(xlim)
-	plt.ylim(ylim)
-
-	# Add labels and grid
-	plt.title('Circles with Given Coordinates and Radii')
-	plt.xlabel('X Coordinate')
-	plt.ylabel('Y Coordinate')
-	plt.grid(True)
-
-	plt.show()
-
-
-def write_to_disk(player_trajectory, est_trajectory, file_name):
-	# print()
-	file_object = open(file_name, "w")
-	file_object.write("Current \t\t estimated \t\t error\n")
-	for i in range(player_trajectory.shape[1]):
-		file_object.write("{} \t\t {} \t\t {}\n".format(player_trajectory[:, i],
-												  		est_trajectory[:, i],
-														np.linalg.norm(
-															player_trajectory[:, i] - est_trajectory[:, i]
-														)))
-	file_object.close()
-
-
-if __name__ == "__main__":
+def main():
 	initial_position = np.array([50.0, 24.0])
 	obj = FieldAssets(100, 60, initial_position)
 	
 	dt = 0.5
 
-	# should be replaced by function that can run at 20 Hz
 	total_iterations = 150
 	t = 0
 
@@ -92,15 +36,11 @@ if __name__ == "__main__":
 		player_trajectory[:, i] = obj.getPosition()
 		obj.alternativeRunning()
 
-	# write_to_disk(player_trajectory, est_trajectory, "results/player_tracking.txt")
-
 	# gimme that plot
 	plt.figure(figsize=(10, 8))
-	plt.plot(player_trajectory[0, :], player_trajectory[1, :], marker='x', label="Player trajectory")
-	plt.plot(est_trajectory[0, :], est_trajectory[1, :], marker='+', label="Estimated trajectory")
+	plt.plot(player_trajectory[0, :], player_trajectory[1, :], linewidth=2, marker='x', label="Player trajectory")
+	plt.plot(est_trajectory[0, :], est_trajectory[1, :], linewidth=2, marker='+', label="Estimated trajectory")
 	plt.title('Tracking a drunk player on a field')
-	# plt.xlim((-5, 100.0))
-	# plt.ylim((-5, 60.0))
 	plt.legend()
 	plt.grid(True)
 
@@ -124,3 +64,7 @@ if __name__ == "__main__":
 	plt.grid(True)
 
 	plt.show()
+
+
+if __name__ == "__main__":
+	main()
