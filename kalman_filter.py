@@ -54,8 +54,8 @@ if __name__ == "__main__":
     # setting a high covariance for motion model because the model is definitely inaccurate
     ekf_estimator.x = initial_guess
     state_transition = 1.0*np.eye(4)
-    # state_transition[0, 2] = delta_t
-    # state_transition[1, 3] = delta_t  
+    state_transition[0, 2] = delta_t
+    state_transition[1, 3] = delta_t  
     ekf_estimator.F = state_transition
     ekf_estimator.Q = 30.0*np.eye(4)
     ekf_estimator.P = 50.0*np.eye(4)
@@ -64,16 +64,21 @@ if __name__ == "__main__":
     ekf_estimator.R = 0.6 * np.eye(4)
 
     for i in range(total_iterations):
-        distance_meas = obj.rangingGenerator()
+        # save player position
         player_trajectory[:, i] = obj.getPosition()
 
+        # get measurement, run KF update step, get new estimate
+        distance_meas = obj.rangingGenerator()
         ekf_estimator.update(distance_meas, jacobian_ext, distance_function)
         est_trajectory[:, i] = ekf_estimator.x
-        # hot-wiring the prediction step:
-        ekf_estimator.x[0:2] = simple_state_transition(distance_meas)
-
+        
+        # hot-wiring the prediction step: did not work
+        # ekf_estimator.x[0:2] = simple_state_transition(distance_meas)
         # ekf_estimator = self_prediction(ekf_estimator)
-        # ekf_estimator.predict()
+
+        # run kf prediction step, update player position
+        ekf_estimator.predict()
+        obj.alternativeRunning()
     
     # gimme that plot
     plt.figure(figsize=(10, 8))
