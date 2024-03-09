@@ -48,13 +48,18 @@ def jacobian_ext(state: np.ndarray) -> np.ndarray:
     return Je
 
 
-def residual_function(state: np.ndarray, measurement: np.ndarray, t: int):
+def residual_function(state: np.ndarray, measurement: np.ndarray, t: int) -> np.ndarray:
     """
     For scipy to find the minimum of this function, the first argument should be the one that we are trying to estimate,
     i.e., the state [xp yp]^T
     """
     residual = measurement - distance_function(state)
     return residual
+
+
+def squared_residual_function(state: np.ndarray, measurement: np.ndarray, t: int):
+    r = residual_function(state, measurement, t)
+    return np.dot(r.T, r)
 
 
 def least_squares(
