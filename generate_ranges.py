@@ -1,9 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import random
 
 # for reproducible results
-np.random.seed(0)
+np.random.seed(155)
 
 class FieldAssets:
     def __init__(self, fieldLength, fieldWidth, initPos=None) -> None:
@@ -73,7 +72,7 @@ class FieldAssets:
             available_directions += list(range(ranges[0], ranges[1]))
 
         # choose a direction where the player goes
-        direction = random.choice(available_directions) * (np.pi / 180)
+        direction = np.random.choice(available_directions) * (np.pi / 180)
 
         # this is the new player position for this time step
         self.playerPos += np.array(
@@ -125,7 +124,7 @@ class FieldAssets:
             available_directions += list(range(quad[0], quad[1]))
 
         # choose a direction where the player goes
-        direction_deg = random.choice(available_directions)
+        direction_deg = np.random.choice(available_directions)
         direction = direction_deg * (np.pi / 180)
 
         # based on the chosen direction, mark it to be duplicated
@@ -136,7 +135,7 @@ class FieldAssets:
 
         # can the player run at different speeds? makes the problem much harder
         if self.randomSpeeds:
-            dist_covered = random.uniform(0, self.avgDistCovered)
+            dist_covered = np.random.uniform(0, self.avgDistCovered)
         else:
             dist_covered = self.avgDistCovered
 
@@ -188,7 +187,7 @@ class FieldAssets:
             available_directions += list(range(quad[0], quad[1]))
         
         # choose a direction where the player goes
-        direction_deg = random.choice(available_directions)
+        direction_deg = np.random.choice(available_directions)
         direction = direction_deg * (np.pi / 180)
 
         # based on the chosen direction, mark it to be repeated
@@ -199,7 +198,7 @@ class FieldAssets:
 
         # can the player run at different speeds? makes the problem much harder
         if self.randomSpeeds:
-            dist_covered = random.uniform(0, self.avgDistCovered)
+            dist_covered = np.random.uniform(0, self.avgDistCovered)
         else:
             dist_covered = self.avgDistCovered
 

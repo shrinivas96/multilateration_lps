@@ -82,7 +82,7 @@ def measurement_jacobian(
         xpi = xp - xi
         ypi = yp - yi
         denominator = np.sqrt(xpi**2 + ypi**2)
-        hJacobian[index, 0:no_of_states] = np.divide([xpi, ypi], denominator)
+        hJacobian[index, 0:2] = np.divide([xpi, ypi], denominator)
     return hJacobian
 
 
@@ -136,7 +136,7 @@ def scipy_least_squares():
     measurement = np.array(obj.rangingGenerator())
 
     initial_guess = np.array([45.0, 20.0])
-    state_res = optimize.least_squares(residual_function, initial_guess, method='lm', args=(measurement,))
+    state_res = optimize.least_squares(residual_function, initial_guess, method='lm', args=(measurement, obj.receiverPos))
     print(state_res.x)
 
 

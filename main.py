@@ -40,8 +40,8 @@ if __name__ == "__main__":
 		est_trajectory[:, i] = initial_guess
 
 		# save player position
-		player_trajectory[:, i] = obj.getPosition()
 		obj.alternativeRunning()
+		player_trajectory[:, i] = obj.getPosition()
 
 	# write_to_disk(player_trajectory, est_trajectory, "results/player_tracking.txt")
 

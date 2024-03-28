@@ -18,7 +18,7 @@ if __name__ == "__main__":
     player_trajectory[:, 0] = obj.getPosition()
 
     # estimated trajectory, for visualisation
-    initial_guess = np.array([49., 24., 0.25, 0.25])
+    initial_guess = np.array([48., 22., 0.25, 0.25])
     # initial_guess = np.array([1., 1., 0.25, 0.25])
     est_trajectory = np.zeros((initial_guess.shape[0], total_iterations))
     est_trajectory[:, 0] = initial_guess
@@ -54,12 +54,12 @@ if __name__ == "__main__":
             ekf_estimator.update(distance_meas, jacobian_ext, hEucledian_distance_function, hx_args=(obj.receiverPos,))
         est_trajectory[:, i] = ekf_estimator.x
 
-        # run kf prediction step
-        ekf_estimator.predict()
-
         # update player position, save it
         obj.alternativeRunning()
         player_trajectory[:, i] = obj.getPosition()
+        
+        # run kf prediction step
+        ekf_estimator.predict()
 
     # gimme that plot
     plt.figure(figsize=(10, 8))
