@@ -1,30 +1,101 @@
 from generate_ranges import FieldAssets
-import matplotlib.pyplot as plt
 from scipy import optimize
 import numpy as np
 
 
-def hEucledian_distance_function(state: np.ndarray, anchors: dict) -> np.ndarray:
+def resExpMeas_and_measJacobian(
+        state: np.ndarray,
+        measurement: np.ndarray,
+        anchors: dict[str, np.ndarray]
+    ) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Computes the residual function and the Jacobian of the expected measurement function, at the given state
+    r_t = z_t - h(x_t)
+    hJ = dh(x_t) / dx_t
+
+    The main purpose to do it this way is because the computation for
+    both anyway have similar components, so one iteration could return both.
+    To use this function in a good way refer to: https://stackoverflow.com/a/72768031/6609148
+    """
+    # the current state (xp yp)^T
+    xp, yp = state[0], state[1]
+
+    # some config and preallocating for speed
+    no_of_anchors = len(anchors)
+    no_of_states = state.shape[0]
+    hJacobian = np.zeros([no_of_anchors, no_of_states])
+    distances = np.zeros((no_of_anchors,))
+
+    # for every receiver
+    for index, anchor in enumerate(anchors.values()):
+        # get the x-, y- coordinate of the receiver
+        xi, yi = anchor[0], anchor[1]
+
+        # variables for repeating computations: distance between the two
+        xpi = xp - xi
+        ypi = yp - yi
+        dist_p2i = np.sqrt(xpi**2 + ypi**2)
+
+        # the expected distance measurement, and its jacobian
+        distances[index] = dist_p2i
+        hJacobian[index, 0:2] = np.divide([xpi, ypi], dist_p2i)
+
+    residual = measurement - distances
+    return residual, hJacobian
+
+
+def hEucledian_distance_function(
+    state: np.ndarray, anchors: dict[str, np.ndarray]
+) -> np.ndarray:
     """
     Computes the Eucledian distance of a given state to the known positions of the receivers (anchors) around the field.
-    This function is the mapping from the state space to the measurement space, i.e. $z_t = h(x_t)$.
+    This is the expected measurement function, the mapping from the state space
+    to the measurement space, i.e. $z_t = h(x_t)$.
     """
     xp, yp = state[0], state[1]
     no_of_anchors = len(anchors)
     distances = np.zeros((no_of_anchors,))
     for index, pos in enumerate(anchors.values()):
-        distances[index] = np.sqrt((xp - pos[0])**2 + (yp - pos[1])**2)
+        distances[index] = np.sqrt((xp - pos[0]) ** 2 + (yp - pos[1]) ** 2)
     return distances
 
 
-def measurement_jacobian(state: np.ndarray, anchors) -> np.ndarray:
-    # TODO lets implement the jacobian here
+def measurement_jacobian(
+    state: np.ndarray, anchors: dict[str, np.ndarray]           # for experimenting: *args
+) -> np.ndarray:
+    """
+    Computes the Jacobian matrix of the expected measurement function.
+    Only the first 2 columns of the Jacobian are filled corresponding to the 2 position states.
+    If there are more states (e.g. velocity states) then they are 0's in the matrix.
+
+    The argument args exists because scipy optimise passes the same arguments to the jacobian
+    function as it does to the residual function. While I do not need the second ardument: measurements
+    """
+    # anchors = args[-1]
+
+    xp, yp = state[0], state[1]
     no_of_anchors = len(anchors)
     no_of_states = state.shape[0]
     hJacobian = np.zeros([no_of_anchors, no_of_states])
     for index, anchor in enumerate(anchors.values()):
-        ...
+        xi, yi = anchor[0], anchor[1]
+        xpi = xp - xi
+        ypi = yp - yi
+        denominator = np.sqrt(xpi**2 + ypi**2)
+        hJacobian[index, 0:no_of_states] = np.divide([xpi, ypi], denominator)
     return hJacobian
+
+
+def residual_function(
+    state: np.ndarray, measurement: np.ndarray, anchors: dict[str, np.ndarray]
+) -> np.ndarray:
+    """
+    Computes the residual between:
+     - measured distance between the given state and anchor locations; contains noise
+     - Eucledian distance between the state and anchor locations
+    """
+    residual = measurement - hEucledian_distance_function(state, anchors)
+    return residual
 
 
 def jacobian_i(state: np.ndarray) -> np.ndarray:
@@ -44,27 +115,16 @@ def jacobian_i(state: np.ndarray) -> np.ndarray:
     Ji = np.array([[j11, j12], [j21, j22], [j31, j32], [j41, j42]])
     return Ji
 
+
 def jacobian_ext(state: np.ndarray) -> np.ndarray:
     """
     Augmenting the above jacobia matrix for the purposes of using in the Kalman filter framework.
-    The KF framework has a constant velocity model, which means two more states have been added, 
+    The KF framework has a constant velocity model, which means two more states have been added,
     and the jacobian needs to be bigger.
     """
     Je = np.zeros((state.shape[0], state.shape[0]))
     Je[:, 0:2] = jacobian_i(state)
     return Je
-
-
-def residual_function(
-    state: np.ndarray, measurement: np.ndarray, anchors: dict[str, np.ndarray]
-) -> np.ndarray:
-    """
-    Computes the residual between:
-     - measured distance between the given state and anchor locations; contains noise
-     - Eucledian distance between the state and anchor locations
-    """
-    residual = measurement - hEucledian_distance_function(state, anchors)
-    return residual
 
 
 def scipy_least_squares():
