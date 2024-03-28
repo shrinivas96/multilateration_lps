@@ -1,8 +1,9 @@
-import time
 import matplotlib.pyplot as plt
-import threading
 import numpy as np
 import random
+
+# for reproducible results
+np.random.seed(0)
 
 class FieldAssets:
     def __init__(self, fieldLength, fieldWidth, initPos=None) -> None:
@@ -220,7 +221,7 @@ class FieldAssets:
         for rec_position in self.receiverPos.values():
             distances.append(
                 np.linalg.norm(self.playerPos - rec_position)
-                + random.uniform(-self.noise, self.noise)
+                + np.random.uniform(-self.noise, self.noise)
             )
 
         return np.array(distances)
@@ -230,40 +231,6 @@ class FieldAssets:
     
     def allowRandomSpeeds(self, allow: bool) -> None:
         self.randomSpeeds = allow
-
-
-def threaded_run():
-    """Deprecated, this will be deleted in the next iteration"""
-    initial_position = np.array([30.0, 20.0])
-    obj = FieldAssets(100, 60, initial_position)
-
-    print("Initial player position", obj.getPosition())
-    
-
-    # should be replaced by function that can run at 20 Hz
-    total_iterations = 15000
-
-    # player's path for visualisation
-    player_trajectory = np.zeros((initial_position.shape[0], total_iterations))
-    player_trajectory[:, 0] = initial_position
-
-    # time tracking
-    time_history = np.zeros(total_iterations)
-    time_history[0] = time.time() * 1000.0
-    for i in range(1, total_iterations):
-        player_trajectory[:, i] = obj.getPosition()
-        time_history[i] = time.time() * 1000.0
-
-    player_transpose = player_trajectory.T
-    print("{} \t\t {}".format(player_trajectory[:, 0], time_history[0]))
-    for i in range(1, total_iterations):
-        print(
-            "{} \t\t {} \t\t {}".format(
-                player_trajectory[:, i],
-                time_history[i],
-                time_history[i] - time_history[i - 1],
-            )
-        )
 
 
 def regular_run():
