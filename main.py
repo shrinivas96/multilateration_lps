@@ -1,64 +1,9 @@
-from least_squares import residual_function
+from position_processor import residual_function, measurement_jacobian
+from scipy.optimize._optimize import MemoizeJac
 from generate_ranges import FieldAssets
-from scipy import optimize
 import matplotlib.pyplot as plt
+from scipy import optimize
 import numpy as np
-
-def plot_circles():
-	initial_position = np.array([50.0, 24.0])
-	
-	obj = FieldAssets(100, 60, initial_position)
-	l1, l2, l3, l4 = obj.rangingGenerator()
-	y1 = (l1**2 - l2**2 + 60**2)/120
-	y2 = (l4**2 - l3**2 + 60**2)/120
-	x1 = np.sqrt(l1**2 - y1**2)
-	x2 = np.sqrt(l4**2 - y2**2) + 100
-	print("Simple equation based solution: ({0}, {1}) and ({2}, {3})".format(x1, y1, x2, y2))
-
-	radii = np.array(obj.rangingGenerator())
-
-	receiverPos = {"BL": np.array([0, 0]), 
-					"TL": np.array([0, 60]),
-					"TR": np.array([100, 60]), 
-					"BR": np.array([100, 0])}
-	coordinates = np.array(list(receiverPos.values()))
-	
-	fig, ax = plt.subplots(figsize=(8, 8))
-	plt.scatter(coordinates[:, 0], coordinates[:, 1])
-	for i in range(len(coordinates)):
-		circle = plt.Circle(coordinates[i], radii[i], color='b', fill=False)
-		ax.add_artist(circle)
-	
-	# Set equal aspect ratio
-	ax.set_aspect('equal')
-
-	# Set limits based on coordinates and radii
-	xlim = (coordinates[:, 0].min() - radii.max(), coordinates[:, 0].max() + radii.max())
-	ylim = (coordinates[:, 1].min() - radii.max(), coordinates[:, 1].max() + radii.max())
-	plt.xlim(xlim)
-	plt.ylim(ylim)
-
-	# Add labels and grid
-	plt.title('Circles with Given Coordinates and Radii')
-	plt.xlabel('X Coordinate')
-	plt.ylabel('Y Coordinate')
-	plt.grid(True)
-
-	plt.show()
-
-
-def write_to_disk(player_trajectory, est_trajectory, file_name):
-	# print()
-	file_object = open(file_name, "w")
-	file_object.write("Current \t\t estimated \t\t error\n")
-	for i in range(player_trajectory.shape[1]):
-		file_object.write("{} \t\t {} \t\t {}\n".format(player_trajectory[:, i],
-												  		est_trajectory[:, i],
-														np.linalg.norm(
-															player_trajectory[:, i] - est_trajectory[:, i]
-														)))
-	file_object.close()
-
 
 if __name__ == "__main__":
 	initial_position = np.array([50.0, 24.0])
@@ -79,10 +24,16 @@ if __name__ == "__main__":
 	est_trajectory = np.zeros((initial_guess.shape[0], total_iterations))
 	est_trajectory[:, 0] = initial_guess
 
+	# residuals = MemoizeJac(expMeas_and_measJacobian)
+	# hJacobian = residuals.derivative
+
 	for i in range(1, total_iterations):
 		# get distance from all sensors, estimate position
 		distance_meas = obj.rangingGenerator()
-		state_res = optimize.least_squares(residual_function, initial_guess, jac='3-point', args=(distance_meas, t))
+		state_res = optimize.least_squares(residual_function, 
+									 		initial_guess, 
+											jac='3-point',
+											args=(distance_meas, obj.receiverPos))
 
 		# update estimate for next iteration, save it
 		initial_guess = state_res.x
