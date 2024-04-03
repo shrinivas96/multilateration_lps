@@ -14,8 +14,8 @@ def resExpMeas_and_measJacobian(
     hJ = dh(x_t) / dx_t
 
     The main purpose to do it this way is because the computation for
-    both anyway have similar components, so one iteration could return both.
-    To use this function in a good way refer to: https://stackoverflow.com/a/72768031/6609148
+    both have similar components, so one iteration could return both.
+    To use this function in an efficient way refer to: https://stackoverflow.com/a/72768031/6609148
     """
     # the current state (xp yp)^T
     xp, yp = state[0], state[1]
@@ -91,40 +91,12 @@ def residual_function(
 ) -> np.ndarray:
     """
     Computes the residual between:
-     - measured distance between the given state and anchor locations; contains noise
-     - Eucledian distance between the state and anchor locations
+     - measured distance between the given state and anchor locations; contains noise z_t
+     - Eucledian distance between the state and anchor locations; exp measurements \hat{z}_t
+    Residual r_t = z_t - \hat{z}_t
     """
     residual = measurement - hEucledian_distance_function(state, anchors)
     return residual
-
-
-def jacobian_i(state: np.ndarray) -> np.ndarray:
-    xp, yp = state[0], state[1]
-    xp2, yp2 = xp**2, yp**2
-    yp60 = (yp - 60) ** 2
-    xp100 = (xp - 100) ** 2
-
-    j11 = xp / np.sqrt(xp2 + yp2)
-    j12 = yp / np.sqrt(xp2 + yp2)
-    j21 = xp / np.sqrt(xp2 + yp60)
-    j22 = (yp - 60) / np.sqrt(xp2 + yp60)
-    j31 = (xp - 100) / np.sqrt(xp100 + yp60)
-    j32 = (yp - 60) / np.sqrt(xp100 + yp60)
-    j41 = (xp - 100) / np.sqrt(xp100 + yp2)
-    j42 = yp / np.sqrt(xp100 + yp2)
-    Ji = np.array([[j11, j12], [j21, j22], [j31, j32], [j41, j42]])
-    return Ji
-
-
-def jacobian_ext(state: np.ndarray) -> np.ndarray:
-    """
-    Augmenting the above jacobia matrix for the purposes of using in the Kalman filter framework.
-    The KF framework has a constant velocity model, which means two more states have been added,
-    and the jacobian needs to be bigger.
-    """
-    Je = np.zeros((state.shape[0], state.shape[0]))
-    Je[:, 0:2] = jacobian_i(state)
-    return Je
 
 
 def scipy_least_squares():

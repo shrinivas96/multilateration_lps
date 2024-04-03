@@ -1,4 +1,4 @@
-from position_processor import hEucledian_distance_function, jacobian_ext, measurement_jacobian
+from position_processor import hEucledian_distance_function, measurement_jacobian
 from filterpy.kalman import ExtendedKalmanFilter
 from generate_ranges import FieldAssets
 import matplotlib.pyplot as plt
@@ -26,8 +26,6 @@ if __name__ == "__main__":
     # kalman filter config
     ekf_estimator = ExtendedKalmanFilter(dim_x=4, dim_z=4)
 
-    use_other_update = True
-
     ekf_estimator.x = initial_guess
     state_transition = 1.0*np.eye(4)
     state_transition[0, 2] = delta_t
@@ -45,13 +43,9 @@ if __name__ == "__main__":
 
         # get measurement, run KF update step, get new estimate
         distance_meas = obj.rangingGenerator()
-        if use_other_update:
-            # TODO what about this approach?
-            ekf_estimator.update(distance_meas, measurement_jacobian, 
-                                 hEucledian_distance_function, 
-                                 args=(obj.receiverPos,), hx_args=(obj.receiverPos,))
-        else:
-            ekf_estimator.update(distance_meas, jacobian_ext, hEucledian_distance_function, hx_args=(obj.receiverPos,))
+        ekf_estimator.update(distance_meas, measurement_jacobian, 
+                            hEucledian_distance_function, 
+                            args=(obj.receiverPos,), hx_args=(obj.receiverPos,))
         est_trajectory[:, i] = ekf_estimator.x
 
         # update player position, save it
