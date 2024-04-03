@@ -1,8 +1,7 @@
 from filterpy.kalman import ExtendedKalmanFilter
 from generate_ranges import FieldAssets
-from tools import EvaluateFunctions
+from tools import EvaluateFunctions, OptimiserWrappper
 import matplotlib.pyplot as plt
-from scipy import optimize
 import numpy as np
 
 if __name__ == "__main__":
@@ -41,6 +40,7 @@ if __name__ == "__main__":
     ekf_estimator.R = 0.6 * np.eye(4)
 
     func_handle = EvaluateFunctions(obj.receiverPos)
+    opt_handle = OptimiserWrappper(func_handle.residual_function)
 
     for i in range(1, total_iterations):
         # get distance measurement from sensors
@@ -48,9 +48,7 @@ if __name__ == "__main__":
         func_handle.update_measurement(distance_meas)
 
         # LSO estimate of position
-        lso_state_res = optimize.least_squares(func_handle.residual_function,
-                                            ekf_estimator.x,
-                                            method='lm')
+        lso_state_res = opt_handle.optimise(ekf_estimator.x)
         lso_trajectory[:, i] = lso_state_res.x
 
         # kf estimate of position: feed LSO estimate

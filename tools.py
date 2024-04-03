@@ -1,4 +1,8 @@
+from scipy.optimize import least_squares, OptimizeResult
+from typing import Callable, Union
 import numpy as np
+
+TypeJac = Union[str, Callable, None]
 
 
 class EvaluateFunctions:
@@ -48,3 +52,34 @@ class EvaluateFunctions:
         """
         residual = self.__measurement - self.hExpected_distance_function(state)
         return residual
+
+
+class OptimiserWrappper:
+    def __init__(
+        self, residual_function: Callable, jacobian: TypeJac = None, method: str = "lm"
+    ) -> None:
+        """
+        This is a wrapper class for the least squares function of scipy optimise.
+        There are many arguments that can be passed to the least squares function,
+        but at this moment this class only accepts the ones that are needed by me at the moment. They are:
+          - residual function: the function that will be squared by the function and found the minimum of
+          - jacobian: defaults to '2-point', that is implemented in least squares for general and lm methods
+          - method: optimisation method, defaults to 'lm'
+        """
+        self.__residual_function = residual_function
+
+        # default way to calculation jacobian that is preferred by lm method of least squares
+        # for an invalid string value, the least squares method already throws an error, so we do not need to check that here
+        if jacobian is None:
+            jacobian = "2-point"
+        self.__jacobian = jacobian
+
+        self.__optimisation_method = method
+
+    def optimise(self, initial_state: np.ndarray) -> OptimizeResult:
+        return least_squares(
+            fun=self.__residual_function,
+            x0=initial_state,
+            jac=self.__jacobian,  # type: ignore
+            method=self.__optimisation_method,
+        )
