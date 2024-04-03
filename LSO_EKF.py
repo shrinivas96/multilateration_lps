@@ -1,6 +1,6 @@
 from filterpy.kalman import ExtendedKalmanFilter
 from generate_ranges import FieldAssets
-from position_processor import *
+from tools import EvaluateFunctions
 import matplotlib.pyplot as plt
 from scipy import optimize
 import numpy as np
@@ -14,7 +14,7 @@ if __name__ == "__main__":
     # should be replaced by function that can run at 20 Hz
     total_iterations = 150
 
-    # player's path for visualisation: combined, KF, LSO
+    # player's path for visualisation
     player_trajectory = np.zeros((initial_position.shape[0], total_iterations))
     player_trajectory[:, 0] = initial_position
 
@@ -22,7 +22,6 @@ if __name__ == "__main__":
     initial_guess = np.array([1., 1., 1., 1.])
     est_trajectory = np.zeros((initial_guess.shape[0], total_iterations))
     est_trajectory[:, 0] = initial_guess
-    kf_trajectory = np.copy(est_trajectory)
     lso_trajectory = np.copy(est_trajectory)
 
 
@@ -41,25 +40,23 @@ if __name__ == "__main__":
     # low covariance for measurement noise
     ekf_estimator.R = 0.6 * np.eye(4)
 
+    func_handle = EvaluateFunctions(obj.receiverPos)
+
     for i in range(1, total_iterations):
         # get distance measurement from sensors
         distance_meas = obj.rangingGenerator()
+        func_handle.update_measurement(distance_meas)
 
         # LSO estimate of position
-        lso_state_res = optimize.least_squares(residual_function, 
-                                            ekf_estimator.x, 
-                                            jac='3-point',
-                                            args=(distance_meas, obj.receiverPos))
-        
+        lso_state_res = optimize.least_squares(func_handle.residual_function,
+                                            ekf_estimator.x,
+                                            method='lm')
         lso_trajectory[:, i] = lso_state_res.x
 
         # kf estimate of position: feed LSO estimate
         ekf_estimator.x = lso_state_res.x
-        ekf_estimator.update(distance_meas, measurement_jacobian, 
-                                 hEucledian_distance_function, 
-                                 args=(obj.receiverPos,), hx_args=(obj.receiverPos,))
-
-        # update estimate for next iteration, save it
+        ekf_estimator.update(distance_meas, func_handle.measurement_jacobian,
+                                 func_handle.hExpected_distance_function)
         est_trajectory[:, i] = ekf_estimator.x
 
         # update, save player position
@@ -68,16 +65,12 @@ if __name__ == "__main__":
 
         # run kf prediction step
         ekf_estimator.predict()
-        kf_trajectory[:, i] = ekf_estimator.x
-
-    # write_to_disk(player_trajectory, est_trajectory, "results/player_tracking.txt")
 
     # gimme that plot
     plt.figure(figsize=(10, 8))
     plt.plot(player_trajectory[0, :], player_trajectory[1, :], marker='x', label="Player trajectory")
-    plt.plot(est_trajectory[0, :], est_trajectory[1, :], marker='o', label="LSO KFU trajectory")
+    plt.plot(est_trajectory[0, :], est_trajectory[1, :], marker='o', label="LSO KF trajectory")
     plt.plot(lso_trajectory[0, :], lso_trajectory[1, :], marker='^', label="LSO trajectory")
-    plt.plot(kf_trajectory[0, :], kf_trajectory[1, :], marker='+', label="KFP trajectory")
     plt.title('Tracking a drunk player on a field')
     # plt.xlim((-5, 100.0))
     # plt.ylim((-5, 60.0))

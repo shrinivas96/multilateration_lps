@@ -1,6 +1,6 @@
-from position_processor import hEucledian_distance_function, measurement_jacobian
 from filterpy.kalman import ExtendedKalmanFilter
 from generate_ranges import FieldAssets
+from tools import EvaluateFunctions
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -8,6 +8,8 @@ import numpy as np
 if __name__ == "__main__":
     initial_position = np.array([50.0, 24.0])
     obj = FieldAssets(100, 60, initial_position)
+
+    func_handle = EvaluateFunctions(obj.receiverPos)
 
     total_iterations = 150
     t = 0
@@ -40,12 +42,13 @@ if __name__ == "__main__":
     ekf_estimator.R = 0.6 * np.eye(4)
 
     for i in range(1, total_iterations):
-
         # get measurement, run KF update step, get new estimate
         distance_meas = obj.rangingGenerator()
-        ekf_estimator.update(distance_meas, measurement_jacobian, 
-                            hEucledian_distance_function, 
-                            args=(obj.receiverPos,), hx_args=(obj.receiverPos,))
+
+        func_handle.update_measurement(distance_meas)
+
+        ekf_estimator.update(distance_meas, func_handle.measurement_jacobian, 
+                            func_handle.hExpected_distance_function)
         est_trajectory[:, i] = ekf_estimator.x
 
         # update player position, save it

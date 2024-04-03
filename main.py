@@ -1,5 +1,6 @@
 from position_processor import residual_function, measurement_jacobian
 from scipy.optimize._optimize import MemoizeJac
+from tools import EvaluateFunctions
 from generate_ranges import FieldAssets
 import matplotlib.pyplot as plt
 from scipy import optimize
@@ -8,7 +9,7 @@ import numpy as np
 if __name__ == "__main__":
 	initial_position = np.array([50.0, 24.0])
 	obj = FieldAssets(100, 60, initial_position)
-	
+
 	dt = 0.5
 
 	# should be replaced by function that can run at 20 Hz
@@ -27,13 +28,16 @@ if __name__ == "__main__":
 	# residuals = MemoizeJac(expMeas_and_measJacobian)
 	# hJacobian = residuals.derivative
 
+	func = EvaluateFunctions(obj.receiverPos)
+
 	for i in range(1, total_iterations):
 		# get distance from all sensors, estimate position
 		distance_meas = obj.rangingGenerator()
-		state_res = optimize.least_squares(residual_function, 
-									 		initial_guess, 
-											jac='3-point',
-											args=(distance_meas, obj.receiverPos))
+		func.update_measurement(distance_meas)
+		state_res = optimize.least_squares(func.residual_function,
+									 		initial_guess,
+									 		# jac=func.measurement_jacobian,
+											method='lm')
 
 		# update estimate for next iteration, save it
 		initial_guess = state_res.x
@@ -42,8 +46,6 @@ if __name__ == "__main__":
 		# save player position
 		obj.alternativeRunning()
 		player_trajectory[:, i] = obj.getPosition()
-
-	# write_to_disk(player_trajectory, est_trajectory, "results/player_tracking.txt")
 
 	# gimme that plot
 	plt.figure(figsize=(10, 8))
