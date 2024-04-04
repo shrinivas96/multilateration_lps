@@ -9,7 +9,7 @@ if __name__ == "__main__":
     field_obj = FieldAssets(100, 60)
     player_sim_obj = SimulatePlayerMovement(field_obj, initial_position)
 
-    func_handle = EvaluateFunctions(field_obj.receiverPos)
+    func_handle = EvaluateFunctions(field_obj.receiver_positions)
     opt_handle = OptimiserWrappper(func_handle.residual_function)
 
     total_iterations = 150
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     process_covariance = 50.0*np.eye(nState_dim)
     
     # low covariance for measurement noise
-    mMeas_dim = len(field_obj.receiverPos)
+    mMeas_dim = len(field_obj.receiver_positions)
     meas_covariance = 0.6*np.eye(mMeas_dim)
 
     ekf_handle = EKF(

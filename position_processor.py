@@ -108,7 +108,7 @@ def scipy_least_squares():
     measurement = np.array(obj.rangingGenerator())
 
     initial_guess = np.array([45.0, 20.0])
-    state_res = optimize.least_squares(residual_function, initial_guess, method='lm', args=(measurement, obj.receiverPos))
+    state_res = optimize.least_squares(residual_function, initial_guess, method='lm', args=(measurement, obj.receiver_positions))
     print(state_res.x)
 
 

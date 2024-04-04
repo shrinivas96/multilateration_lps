@@ -23,7 +23,7 @@ if __name__ == "__main__":
 	# residuals = MemoizeJac(expMeas_and_measJacobian)
 	# hJacobian = residuals.derivative
 
-	func_handle = EvaluateFunctions(field_obj.receiverPos)
+	func_handle = EvaluateFunctions(field_obj.receiver_positions)
 	opt_handle = OptimiserWrappper(func_handle.residual_function)
 
 	for i in range(1, total_iterations):
