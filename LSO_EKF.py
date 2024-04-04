@@ -1,12 +1,15 @@
-from filterpy.kalman import ExtendedKalmanFilter
 from generate_ranges import FieldAssets
 from tools import EvaluateFunctions, OptimiserWrappper
+from tools import ExtendedKalmanFilter as EKF
 import matplotlib.pyplot as plt
 import numpy as np
 
 if __name__ == "__main__":
     initial_position = np.array([50.0, 24.0])
     obj = FieldAssets(100, 60, initial_position)
+
+    func_handle = EvaluateFunctions(obj.receiverPos)
+    opt_handle = OptimiserWrappper(func_handle.residual_function)
 
     delta_t = 0.05
 
@@ -22,25 +25,33 @@ if __name__ == "__main__":
     est_trajectory = np.zeros((initial_guess.shape[0], total_iterations))
     est_trajectory[:, 0] = initial_guess
     lso_trajectory = np.copy(est_trajectory)
+    nState_dim = initial_guess.shape[0]
 
-
-    # kalman filter configuration; initialise prior, and model matrices
-    ekf_estimator = ExtendedKalmanFilter(dim_x=4, dim_z=4)
-    ekf_estimator.x = initial_guess
-    state_transition = 1.0*np.eye(4)
+    # kalman filter configuration; initialise prior and model matrices
+    state_transition = 1.0*np.eye(nState_dim)
     state_transition[0, 2] = delta_t
     state_transition[1, 3] = delta_t
-    ekf_estimator.F = state_transition
-
+    
     # setting a high covariance for motion model because the model is definitely inaccurate
-    ekf_estimator.Q = 30.0*np.eye(4)
-    ekf_estimator.P = 50.0*np.eye(4)
-
+    process_noise = 30.0*np.eye(nState_dim)
+    process_covariance = 50.0*np.eye(nState_dim)
+    
     # low covariance for measurement noise
-    ekf_estimator.R = 0.6 * np.eye(4)
+    mMeas_dim = len(obj.receiverPos)
+    meas_covariance = 0.6*np.eye(mMeas_dim)
 
-    func_handle = EvaluateFunctions(obj.receiverPos)
-    opt_handle = OptimiserWrappper(func_handle.residual_function)
+    ekf_handle = EKF(
+        nState_dim,
+        state_transition,
+        state_transition,
+        process_covariance,
+        process_noise,
+        mMeas_dim,
+        func_handle.hExpected_distance_function,
+        func_handle.measurement_jacobian,
+        meas_covariance,
+        initial_guess
+    )
 
     for i in range(1, total_iterations):
         # get distance measurement from sensors
@@ -48,21 +59,22 @@ if __name__ == "__main__":
         func_handle.update_measurement(distance_meas)
 
         # LSO estimate of position
-        lso_state_res = opt_handle.optimise(ekf_estimator.x)
+        lso_state_res = opt_handle.optimise(ekf_handle.x)
         lso_trajectory[:, i] = lso_state_res.x
 
         # kf estimate of position: feed LSO estimate
-        ekf_estimator.x = lso_state_res.x
-        ekf_estimator.update(distance_meas, func_handle.measurement_jacobian,
-                                 func_handle.hExpected_distance_function)
-        est_trajectory[:, i] = ekf_estimator.x
+        ekf_handle.x = lso_state_res.x
+        ekf_handle.update(distance_meas)
+        # ekf_handle.update(distance_meas, func_handle.measurement_jacobian,
+        #                      func_handle.hExpected_distance_function)
+        est_trajectory[:, i] = ekf_handle.x
 
         # update, save player position
         obj.alternativeRunning()
         player_trajectory[:, i] = obj.getPosition()
 
         # run kf prediction step
-        ekf_estimator.predict()
+        ekf_handle.predict()
 
     # gimme that plot
     plt.figure(figsize=(10, 8))

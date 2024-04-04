@@ -1,6 +1,5 @@
-from filterpy.kalman import ExtendedKalmanFilter
 from generate_ranges import FieldAssets
-from tools import EvaluateFunctions
+from tools import EvaluateFunctions, ExtendedKalmanFilter
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -12,7 +11,6 @@ if __name__ == "__main__":
     func_handle = EvaluateFunctions(obj.receiverPos)
 
     total_iterations = 150
-    t = 0
     delta_t = 0.05
 
     # player's path for visualisation
@@ -21,25 +19,34 @@ if __name__ == "__main__":
 
     # estimated trajectory, for visualisation
     initial_guess = np.array([48., 22., 0.25, 0.25])
-    # initial_guess = np.array([1., 1., 0.25, 0.25])
     est_trajectory = np.zeros((initial_guess.shape[0], total_iterations))
     est_trajectory[:, 0] = initial_guess
 
-    # kalman filter config
-    ekf_estimator = ExtendedKalmanFilter(dim_x=4, dim_z=4)
+    # state and measurement space dimension
+    nState_dim = initial_guess.shape[0]
+    mMeas_dim = len(obj.receiverPos)
 
-    ekf_estimator.x = initial_guess
-    state_transition = 1.0*np.eye(4)
+    # model properties
+    state_transition = 1.0*np.eye(nState_dim)
     state_transition[0, 2] = delta_t
     state_transition[1, 3] = delta_t
-    ekf_estimator.F = state_transition
+    process_covariance = 50.0*np.eye(nState_dim)
+    process_noise = 30.0*np.eye(nState_dim)
+    meas_covariance = 0.6*np.eye(mMeas_dim)
 
-    # setting a high covariance for motion model because the model is definitely inaccurate
-    ekf_estimator.Q = 30.0*np.eye(4)
-    ekf_estimator.P = 50.0*np.eye(4)
-
-    # low covariance for measurement noise
-    ekf_estimator.R = 0.6 * np.eye(4)
+    # kalman filter config
+    ekf_estimator = ExtendedKalmanFilter(
+        nState_dim,
+        state_transition,
+        state_transition,
+        process_covariance,
+        process_noise,
+        mMeas_dim,
+        func_handle.hExpected_distance_function,
+        func_handle.measurement_jacobian,
+        meas_covariance,
+        initial_guess
+    )
 
     for i in range(1, total_iterations):
         # get measurement, run KF update step, get new estimate
@@ -47,8 +54,7 @@ if __name__ == "__main__":
 
         func_handle.update_measurement(distance_meas)
 
-        ekf_estimator.update(distance_meas, func_handle.measurement_jacobian, 
-                            func_handle.hExpected_distance_function)
+        ekf_estimator.update(distance_meas)
         est_trajectory[:, i] = ekf_estimator.x
 
         # update player position, save it
