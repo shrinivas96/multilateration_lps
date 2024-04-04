@@ -1,20 +1,19 @@
-from generate_ranges import FieldAssets
+from generate_ranges import FieldAssets, SimulatePlayerMovement
 from tools import EvaluateFunctions, OptimiserWrappper
 from tools import ExtendedKalmanFilter as EKF
 import matplotlib.pyplot as plt
 import numpy as np
 
 if __name__ == "__main__":
-    initial_position = np.array([50.0, 24.0])
-    obj = FieldAssets(100, 60, initial_position)
+    initial_position = np.array([30.0, 20.0])
+    field_obj = FieldAssets(100, 60)
+    player_sim_obj = SimulatePlayerMovement(field_obj, initial_position)
 
-    func_handle = EvaluateFunctions(obj.receiverPos)
+    func_handle = EvaluateFunctions(field_obj.receiverPos)
     opt_handle = OptimiserWrappper(func_handle.residual_function)
 
-    delta_t = 0.05
-
-    # should be replaced by function that can run at 20 Hz
     total_iterations = 150
+    delta_t = 0.05
 
     # player's path for visualisation
     player_trajectory = np.zeros((initial_position.shape[0], total_iterations))
@@ -37,7 +36,7 @@ if __name__ == "__main__":
     process_covariance = 50.0*np.eye(nState_dim)
     
     # low covariance for measurement noise
-    mMeas_dim = len(obj.receiverPos)
+    mMeas_dim = len(field_obj.receiverPos)
     meas_covariance = 0.6*np.eye(mMeas_dim)
 
     ekf_handle = EKF(
@@ -55,7 +54,7 @@ if __name__ == "__main__":
 
     for i in range(1, total_iterations):
         # get distance measurement from sensors
-        distance_meas = obj.rangingGenerator()
+        distance_meas = player_sim_obj.rangingGenerator()
         func_handle.update_measurement(distance_meas)
 
         # LSO estimate of position
@@ -70,8 +69,8 @@ if __name__ == "__main__":
         est_trajectory[:, i] = ekf_handle.x
 
         # update, save player position
-        obj.alternativeRunning()
-        player_trajectory[:, i] = obj.getPosition()
+        player_sim_obj.simulateRun()
+        player_trajectory[:, i] = player_sim_obj.getPosition()
 
         # run kf prediction step
         ekf_handle.predict()

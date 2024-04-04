@@ -1,17 +1,15 @@
 from tools import EvaluateFunctions, OptimiserWrappper
-from generate_ranges import FieldAssets
+from generate_ranges import FieldAssets, SimulatePlayerMovement
 import matplotlib.pyplot as plt
 import numpy as np
 
 if __name__ == "__main__":
-	initial_position = np.array([50.0, 24.0])
-	obj = FieldAssets(100, 60, initial_position)
+	initial_position = np.array([30.0, 20.0])
+	field_obj = FieldAssets(100, 60)
+	player_sim_obj = SimulatePlayerMovement(field_obj, initial_position)
 
-	dt = 0.5
-
-	# should be replaced by function that can run at 20 Hz
 	total_iterations = 150
-	t = 0
+	delta_t = 0.5
 
 	# player's path for visualisation
 	player_trajectory = np.zeros((initial_position.shape[0], total_iterations))
@@ -25,12 +23,12 @@ if __name__ == "__main__":
 	# residuals = MemoizeJac(expMeas_and_measJacobian)
 	# hJacobian = residuals.derivative
 
-	func_handle = EvaluateFunctions(obj.receiverPos)
+	func_handle = EvaluateFunctions(field_obj.receiverPos)
 	opt_handle = OptimiserWrappper(func_handle.residual_function)
 
 	for i in range(1, total_iterations):
 		# get distance from all sensors, estimate position
-		distance_meas = obj.rangingGenerator()
+		distance_meas = player_sim_obj.rangingGenerator()
 		func_handle.update_measurement(distance_meas)
 		state_res = opt_handle.optimise(initial_guess)
 
@@ -39,8 +37,8 @@ if __name__ == "__main__":
 		est_trajectory[:, i] = initial_guess
 
 		# save player position
-		obj.alternativeRunning()
-		player_trajectory[:, i] = obj.getPosition()
+		player_sim_obj.simulateRun()
+		player_trajectory[:, i] = player_sim_obj.getPosition()
 
 	# gimme that plot
 	plt.figure(figsize=(10, 8))
@@ -62,7 +60,7 @@ if __name__ == "__main__":
 	plt.grid(True)
 
 	plt.figure(figsize=(10, 8))
-	velocity = (est_trajectory[:, 1:] - est_trajectory[:, :-1])*dt
+	velocity = (est_trajectory[:, 1:] - est_trajectory[:, :-1])*delta_t
 	velocity = np.linalg.norm(velocity, axis=0)
 	velocity_iterations = np.arange(total_iterations-1)
 	plt.plot(velocity_iterations, velocity)

@@ -1,21 +1,22 @@
-from generate_ranges import FieldAssets
+from generate_ranges import FieldAssets, SimulatePlayerMovement
 from tools import EvaluateFunctions, ExtendedKalmanFilter
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 if __name__ == "__main__":
-    initial_position = np.array([50.0, 24.0])
-    obj = FieldAssets(100, 60, initial_position)
+    initial_position = np.array([30.0, 20.0])
+    field_obj = FieldAssets(100, 60)
+    player_sim_obj = SimulatePlayerMovement(field_obj, initial_position)
 
-    func_handle = EvaluateFunctions(obj.receiverPos)
+    func_handle = EvaluateFunctions(field_obj.receiverPos)
 
     total_iterations = 150
     delta_t = 0.05
 
     # player's path for visualisation
     player_trajectory = np.zeros((initial_position.shape[0], total_iterations))
-    player_trajectory[:, 0] = obj.getPosition()
+    player_trajectory[:, 0] = player_sim_obj.getPosition()
 
     # estimated trajectory, for visualisation
     initial_guess = np.array([48., 22., 0.25, 0.25])
@@ -24,7 +25,7 @@ if __name__ == "__main__":
 
     # state and measurement space dimension
     nState_dim = initial_guess.shape[0]
-    mMeas_dim = len(obj.receiverPos)
+    mMeas_dim = len(field_obj.receiverPos)
 
     # model properties
     state_transition = 1.0*np.eye(nState_dim)
@@ -50,7 +51,7 @@ if __name__ == "__main__":
 
     for i in range(1, total_iterations):
         # get measurement, run KF update step, get new estimate
-        distance_meas = obj.rangingGenerator()
+        distance_meas = player_sim_obj.rangingGenerator()
 
         func_handle.update_measurement(distance_meas)
 
@@ -58,8 +59,8 @@ if __name__ == "__main__":
         est_trajectory[:, i] = ekf_estimator.x
 
         # update player position, save it
-        obj.alternativeRunning()
-        player_trajectory[:, i] = obj.getPosition()
+        player_sim_obj.simulateRun()
+        player_trajectory[:, i] = player_sim_obj.getPosition()
         
         # run kf prediction step
         ekf_estimator.predict()
