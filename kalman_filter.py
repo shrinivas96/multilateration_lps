@@ -1,5 +1,5 @@
 from generate_ranges import FieldAssets, SimulatePlayerMovement
-from tools import EvaluateFunctions, ExtendedKalmanFilter
+from position_processor_tools import EvaluateMeasurementFunctions, ExtendedKalmanFilter
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -9,7 +9,7 @@ if __name__ == "__main__":
     field_obj = FieldAssets(100, 60)
     player_sim_obj = SimulatePlayerMovement(field_obj, initial_position)
 
-    func_handle = EvaluateFunctions(field_obj.receiver_positions)
+    func_handle = EvaluateMeasurementFunctions(field_obj.receiver_positions)
 
     total_iterations = 150
     delta_t = 0.05

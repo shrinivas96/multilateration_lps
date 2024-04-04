@@ -1,6 +1,6 @@
 from generate_ranges import FieldAssets, SimulatePlayerMovement
-from tools import EvaluateFunctions, OptimiserWrappper
-from tools import ExtendedKalmanFilter as EKF
+from position_processor_tools import EvaluateMeasurementFunctions, OptimiserWrappper
+from position_processor_tools import ExtendedKalmanFilter as EKF
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -9,7 +9,7 @@ if __name__ == "__main__":
     field_obj = FieldAssets(100, 60)
     player_sim_obj = SimulatePlayerMovement(field_obj, initial_position)
 
-    func_handle = EvaluateFunctions(field_obj.receiver_positions)
+    func_handle = EvaluateMeasurementFunctions(field_obj.receiver_positions)
     opt_handle = OptimiserWrappper(func_handle.residual_function)
 
     total_iterations = 150

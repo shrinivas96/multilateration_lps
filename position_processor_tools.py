@@ -6,7 +6,7 @@ TypeJac = Union[str, Callable, None]
 TypeModels = Union[np.ndarray, Callable]
 
 
-class EvaluateFunctions:
+class EvaluateMeasurementFunctions:
     def __init__(self, anchors: dict[str, np.ndarray]) -> None:
         """
         A class to group measurement functions (model and Jacobian), that depend on similar parameters. 
