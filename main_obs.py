@@ -1,4 +1,4 @@
-from position_processor_tools import EvaluateMeasurementFunctions, OptimiserWrappper
+from position_processor_tools import EvaluateMeasurementFunctions, OptimiserWrapper
 from generate_ranges import FieldAssets, SimulatePlayerMovement
 import matplotlib.pyplot as plt
 import numpy as np
@@ -24,7 +24,7 @@ if __name__ == "__main__":
 	# hJacobian = residuals.derivative
 
 	func_handle = EvaluateMeasurementFunctions(field_obj.receiver_positions)
-	opt_handle = OptimiserWrappper(func_handle.residual_function)
+	opt_handle = OptimiserWrapper(func_handle.residual_function)
 
 	for i in range(1, total_iterations):
 		# get distance from all sensors, estimate position

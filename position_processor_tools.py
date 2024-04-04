@@ -93,7 +93,7 @@ class EvaluateMeasurementFunctions:
         return residual
 
 
-class OptimiserWrappper:
+class OptimiserWrapper:
     def __init__(
         self, residual_function: Callable, jacobian: TypeJac = None, method: str = "lm", args: tuple = ()
     ) -> None:
